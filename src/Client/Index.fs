@@ -1,127 +1,94 @@
 module Index
 
 open Elmish
-open Fable.Remoting.Client
-open Shared
-open Github
+open RicknMorty
 
-type Model = { Todos: Todo list; Input: string }
+type Status =
+    | Alive
+    | Dead
+    | Unknown
+type RickNMortyCharacter =
+    { Name: string
+      Image: string
+      Status: Status
+      Id: string
+      species: string }
+type Model = { Characters: GetCharacters.Character list  }
 
 type Msg =
-    | GotTodos of Todo list
-    | SetInput of string
-    | AddTodo
-    | AddedTodo of Todo
-    | DoGQL of Result<GithubSearch.Query,ErrorType list>
-
-let todosApi =
-    Remoting.createApi ()
-    |> Remoting.withRouteBuilder Route.builder
-    |> Remoting.buildProxy<ITodosApi>
+    | GetRickAndMortyCharacters of Result<GetCharacters.Query,ErrorType list>
 
 let init () : Model * Cmd<Msg> =
-    let model = { Todos = []; Input = "" }
-    let client = GithubGraphqlClient("https://api.github.com/graphql")
+    let model = { Characters = List.empty }
+    let client = RicknMortyGraphqlClient("https://rickandmortyapi.com/graphql")
     let cmd =
-        Cmd.OfAsync.perform client.GithubSearchAsync () DoGQL
+        Cmd.OfAsync.perform client.GetCharacters () GetRickAndMortyCharacters
     model, cmd
 
 let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
     match msg with
-    | DoGQL x ->
-        Browser.Dom.console.log(x,"HEY")
-        model, Cmd.none
-    | GotTodos todos -> { model with Todos = todos }, Cmd.none
-    | SetInput value -> { model with Input = value }, Cmd.none
-    | AddTodo ->
-        let todo = Todo.create model.Input
-        let cmd =
-            Cmd.OfAsync.perform todosApi.addTodo todo AddedTodo
-        { model with Input = "" }, cmd
-    | AddedTodo todo ->
-        { model with
-              Todos = model.Todos @ [ todo ] },
-        Cmd.none
+    | GetRickAndMortyCharacters (Ok queryResult) ->
+        match queryResult.characters with
+        | Some characters ->
+            match characters.results with
+            | Some x ->
+                x
+                |> List.choose id
+                |> fun y -> { model with Characters = y }, Cmd.none
+        | None -> model, Cmd.none
+
+    | GetRickAndMortyCharacters (Error e) -> model, Cmd.none
 
 open Feliz
 open Feliz.Bulma
 
-let navBrand =
-    Bulma.navbarBrand.div [
-        Bulma.navbarItem.a [
-            prop.href "https://safe-stack.github.io/"
-            navbarItem.isActive
-            prop.children [
-                Html.img [
-                    prop.src "/favicon.png"
-                    prop.alt "Logo"
+let navBar =
+    Bulma.navbar [
+        prop.style [
+            style.backgroundColor "#FF3CAC"
+            style.backgroundImage "linear-gradient(225deg, #FF3CAC 0%, #784BA0 50%, #2B86C5 100%)"
+        ]
+        prop.children [
+            Bulma.navbarBrand.div [
+                Bulma.navbarItem.a [
+                    prop.style [ style.color "white"; style.fontSize 20 ]
+                    prop.text "Client side GraphQL"
                 ]
             ]
         ]
     ]
 
-let containerBox (model: Model) (dispatch: Msg -> unit) =
+let characterView (character: GetCharacters.Character) =
     Bulma.box [
-        Bulma.content [
-            Html.ol [
-                for todo in model.Todos do
-                    Html.li [ prop.text todo.Description ]
-            ]
+        prop.style [ style.height 300; style.width 200; style.boxShadow(1, 1, 6, -1, "black") ]
+        prop.children [
+            Html.img [ prop.src character.image.Value ]
+            Html.div (character.name.Value)
+            Html.div (character.species.Value)
+            Html.div (character.status.Value)
         ]
-        Bulma.field.div [
-            field.isGrouped
-            prop.children [
-                Bulma.control.p [
-                    control.isExpanded
-                    prop.children [
-                        Bulma.input.text [
-                            prop.value model.Input
-                            prop.placeholder "What needs to be done?"
-                            prop.onChange (fun x -> SetInput x |> dispatch)
-                        ]
-                    ]
-                ]
-                Bulma.control.p [
-                    Bulma.button.a [
-                        color.isPrimary
-                        prop.disabled (Todo.isValid model.Input |> not)
-                        prop.onClick (fun _ -> dispatch AddTodo)
-                        prop.text "Add"
-                    ]
-                ]
+    ]
+
+
+let charactersView (characters: GetCharacters.Character list) (dispatch: Msg -> unit) =
+    Bulma.columns [
+        columns.isMultiline
+        prop.children [
+            for character in characters do
+                Bulma.column [
+                characterView character
             ]
         ]
     ]
 
 let view (model: Model) (dispatch: Msg -> unit) =
-    Bulma.hero [
-        hero.isFullHeight
-        color.isPrimary
-        prop.style [
-            style.backgroundSize "cover"
-            style.backgroundImageUrl "https://unsplash.it/1200/900?random"
-            style.backgroundPosition "no-repeat center center fixed"
-        ]
+    Html.div [
+        prop.style [ style.backgroundColor "lightgray" ]
         prop.children [
-            Bulma.heroHead [
-                Bulma.navbar [
-                    Bulma.container [ navBrand ]
-                ]
-            ]
-            Bulma.heroBody [
-                Bulma.container [
-                    Bulma.column [
-                        column.is6
-                        column.isOffset3
-                        prop.children [
-                            Bulma.title [
-                                text.hasTextCentered
-                                prop.text "snowflaque_demo"
-                            ]
-                            containerBox model dispatch
-                        ]
-                    ]
-                ]
+            navBar
+            Bulma.container [
+                prop.style [ style.margin 50;  style.display.flex; style.justifyContent.center; style.alignContent.center ]
+                prop.children [ charactersView model.Characters dispatch ]
             ]
         ]
     ]

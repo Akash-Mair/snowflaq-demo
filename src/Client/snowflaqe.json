@@ -1,7 +1,6 @@
 {
-    "schema": "./GithubSchema.json",
+    "schema": "https://rickandmortyapi.com/graphql",
     "queries": "./queries",
-    "project": "Github",
-    "output": "../output",
-    "target": "fsharp"
+    "project": "RicknMorty",
+    "output": "../output"
 }

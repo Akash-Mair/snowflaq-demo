@@ -11,7 +11,7 @@
         <Compile Include="App.fs" />
     </ItemGroup>
     <ItemGroup>
-        <ProjectReference Include="..\output\Github.fsproj" />
+        <ProjectReference Include="..\output\RicknMorty.fsproj" />
         <ProjectReference Include="..\Shared\Shared.fsproj" />
     </ItemGroup>
     <Import Project="..\..\.paket\Paket.Restore.targets" />
