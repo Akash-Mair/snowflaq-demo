@@ -42,7 +42,8 @@ let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
             | Some x ->
                 x
                 |> List.choose id
-                |> fun y -> { model with Characters = Resolved y }, Cmd.none
+                |> fun chars ->
+                    { model with Characters = Resolved chars }, Cmd.none
         | None -> model, Cmd.none
 
     | GetRickAndMortyCharacters (Finished (Error e)) -> model, Cmd.none
@@ -70,10 +71,10 @@ let characterView (character: GetCharacters.Character) =
     Bulma.box [
         prop.style [ style.height 300; style.width 200; style.boxShadow(1, 1, 6, -1, "black") ]
         prop.children [
-            Html.img [ prop.src character.image.Value ]
-            Html.div (character.name.Value)
-            Html.div (character.species.Value)
-            Html.div (character.status.Value)
+            Html.img (character.image |> Option.toList |> List.map prop.src)
+            Html.div (character.name |> Option.toList |> List.map prop.text)
+            Html.div (character.species |> Option.toList |> List.map prop.text)
+            Html.div (character.status |> Option.toList |> List.map prop.text)
         ]
     ]
 
@@ -95,7 +96,7 @@ let view (model: Model) (dispatch: Msg -> unit) =
         prop.children [
             navBar
             Bulma.container [
-                prop.style [ style.margin 50;  style.display.flex; style.justifyContent.center; style.alignContent.center ]
+                prop.style [ style.marginTop 100; style.display.flex; style.justifyContent.center; style.alignContent.center ]
                 prop.children [
                     match model.Characters with
                     | HasNotStartedYet -> Html.div "Has not started"
