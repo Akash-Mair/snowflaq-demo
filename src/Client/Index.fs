@@ -3,6 +3,14 @@ module Index
 open Elmish
 open RicknMorty
 
+type AsyncOperationStatus<'t> =
+    | Started
+    | Finished of 't
+
+type Deferred<'t> =
+    | HasNotStartedYet
+    | InProgress
+    | Resolved of 't
 type Status =
     | Alive
     | Dead
@@ -12,32 +20,32 @@ type RickNMortyCharacter =
       Image: string
       Status: Status
       Id: string
-      species: string }
-type Model = { Characters: GetCharacters.Character list  }
+      Species: string }
+type Model = { Characters: Deferred<GetCharacters.Character list>  }
 
 type Msg =
-    | GetRickAndMortyCharacters of Result<GetCharacters.Query,ErrorType list>
+    | GetRickAndMortyCharacters of AsyncOperationStatus<Result<GetCharacters.Query,ErrorType list>>
 
 let init () : Model * Cmd<Msg> =
-    let model = { Characters = List.empty }
+    let model = { Characters = InProgress }
     let client = RicknMortyGraphqlClient("https://rickandmortyapi.com/graphql")
     let cmd =
-        Cmd.OfAsync.perform client.GetCharacters () GetRickAndMortyCharacters
+        Cmd.OfAsync.perform client.GetCharacters () (Finished >> GetRickAndMortyCharacters)
     model, cmd
 
 let update (msg: Msg) (model: Model) : Model * Cmd<Msg> =
     match msg with
-    | GetRickAndMortyCharacters (Ok queryResult) ->
+    | GetRickAndMortyCharacters (Finished (Ok queryResult)) ->
         match queryResult.characters with
         | Some characters ->
             match characters.results with
             | Some x ->
                 x
                 |> List.choose id
-                |> fun y -> { model with Characters = y }, Cmd.none
+                |> fun y -> { model with Characters = Resolved y }, Cmd.none
         | None -> model, Cmd.none
 
-    | GetRickAndMortyCharacters (Error e) -> model, Cmd.none
+    | GetRickAndMortyCharacters (Finished (Error e)) -> model, Cmd.none
 
 open Feliz
 open Feliz.Bulma
@@ -88,7 +96,12 @@ let view (model: Model) (dispatch: Msg -> unit) =
             navBar
             Bulma.container [
                 prop.style [ style.margin 50;  style.display.flex; style.justifyContent.center; style.alignContent.center ]
-                prop.children [ charactersView model.Characters dispatch ]
+                prop.children [
+                    match model.Characters with
+                    | HasNotStartedYet -> Html.div "Has not started"
+                    | InProgress -> Html.div "Loading"
+                    | Resolved characters -> charactersView characters dispatch
+                ]
             ]
         ]
     ]
