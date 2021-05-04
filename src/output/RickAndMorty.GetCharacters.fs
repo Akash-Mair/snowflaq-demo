@@ -1,5 +1,5 @@
 [<RequireQualifiedAccess>]
-module rec RicknMorty.GetCharacters
+module rec RickAndMorty.GetCharacters
 
 type Character =
     { /// The name of the character.

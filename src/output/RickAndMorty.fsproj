@@ -4,9 +4,9 @@
         <LangVersion>latest</LangVersion>
     </PropertyGroup>
     <ItemGroup>
-        <Compile Include="RicknMorty.Types.fs" />
-        <Compile Include="RicknMorty.GetCharacters.fs" />
-        <Compile Include="RicknMorty.GraphqlClient.fs" />
+        <Compile Include="RickAndMorty.Types.fs" />
+        <Compile Include="RickAndMorty.GetCharacters.fs" />
+        <Compile Include="RickAndMorty.GraphqlClient.fs" />
     </ItemGroup>
     <ItemGroup>
         <Content Include="*.fsproj; *.fs; *.js" Exclude="**\*.fs.js" PackagePath="fable\" />

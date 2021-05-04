@@ -1,4 +1,4 @@
-namespace rec RicknMorty
+namespace rec RickAndMorty
 
 [<Fable.Core.StringEnum; RequireQualifiedAccess>]
 type CacheControlScope =
